@@ -1,0 +1,5 @@
+{
+  "name": "LibSys - Library Manager",
+  "description": "A comprehensive library management system featuring user authentication, book inventory management, and a borrowing/returning system. Simulates a full backend environment within the browser.",
+  "requestFramePermissions": []
+}
