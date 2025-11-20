@@ -1,12 +1,17 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MockAuthService } from '../services/mockDb';
-import { Lock, User, AlertCircle } from 'lucide-react';
+import { Lock, User, AlertCircle, UserPlus } from 'lucide-react';
 
 const Login: React.FC = () => {
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState(''); // For registration
+  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -19,15 +24,26 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const user = await MockAuthService.login(username, password);
-      if (user) {
+      if (isLoginMode) {
+        const user = await MockAuthService.login(username, password);
+        if (user) {
+          login(user);
+          navigate('/');
+        } else {
+          setError('Invalid username or password');
+        }
+      } else {
+        if (!fullName.trim()) {
+          setError("Full Name is required");
+          setIsLoading(false);
+          return;
+        }
+        const user = await MockAuthService.register(username, password, fullName);
         login(user);
         navigate('/');
-      } else {
-        setError('Invalid username or password');
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -38,10 +54,10 @@ const Login: React.FC = () => {
       <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
         <div className="text-center">
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Welcome back
+            {isLoginMode ? 'Welcome back' : 'Create Account'}
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Please sign in to your library account
+            {isLoginMode ? 'Please sign in to your library account' : 'Join our library community today'}
           </p>
         </div>
 
@@ -54,6 +70,29 @@ const Login: React.FC = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {!isLoginMode && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <User className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    required={!isLoginMode}
+                    className="block w-full rounded-lg border border-slate-300 pl-10 py-2 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 sm:text-sm transition-all outline-none"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
                 Username
@@ -109,29 +148,36 @@ const Login: React.FC = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  {isLoginMode ? "Signing in..." : "Registering..."}
                 </span>
               ) : (
-                "Sign in"
+                isLoginMode ? "Sign in" : "Create Account"
               )}
             </button>
           </div>
         </form>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-slate-500">Demo Credentials</span>
-            </div>
-          </div>
-          <div className="mt-6 grid grid-cols-1 gap-3 text-xs text-slate-500">
-            <div className="flex justify-between bg-slate-50 p-2 rounded"><span>Admin:</span> <span className="font-mono">admin / admin123</span></div>
-            <div className="flex justify-between bg-slate-50 p-2 rounded"><span>Librarian:</span> <span className="font-mono">librarian / lib123</span></div>
-            <div className="flex justify-between bg-slate-50 p-2 rounded"><span>User:</span> <span className="font-mono">user1 / pass123</span></div>
-          </div>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              setIsLoginMode(!isLoginMode);
+              setError('');
+              setUsername('');
+              setPassword('');
+              setFullName('');
+            }}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-2 mx-auto"
+          >
+            {isLoginMode ? (
+              <>
+                <UserPlus className="h-4 w-4" /> Don't have an account? Register
+              </>
+            ) : (
+              <>
+                Already have an account? Sign in
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

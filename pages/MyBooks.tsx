@@ -1,14 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { Transaction } from '../types';
 import { MockTransactionService } from '../services/mockDb';
 import { useAuth } from '../context/AuthContext';
-import { Clock, CheckCircle, AlertTriangle, BookOpen } from 'lucide-react';
+import { Clock, CheckCircle, AlertTriangle, BookOpen, XCircle } from 'lucide-react';
 
 const MyBooks: React.FC = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -21,20 +23,29 @@ const MyBooks: React.FC = () => {
       const data = await MockTransactionService.getUserHistory(user.id);
       setTransactions(data);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load history:", err);
+      showNotification('error', 'Could not load your book history.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const handleReturn = async (txId: number) => {
-    if (!window.confirm("Confirm return of this book?")) return;
+    if (!window.confirm("Are you sure you want to return this book?")) return;
+    
     setProcessingId(txId);
     try {
       await MockTransactionService.returnBook(txId);
-      await loadHistory();
-    } catch (err) {
-      alert("Failed to return book");
+      await loadHistory(); // Refresh list
+      showNotification('success', 'Book returned successfully!');
+    } catch (err: any) {
+      console.error("Return failed:", err);
+      showNotification('error', err.message || "Failed to return book. Please try again.");
     } finally {
       setProcessingId(null);
     }
@@ -50,11 +61,21 @@ const MyBooks: React.FC = () => {
   if (isLoading) return <div className="p-12 text-center text-slate-500">Loading your records...</div>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">My Bookshelf</h1>
         <p className="text-slate-500">Manage your current loans and view history</p>
       </div>
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed top-20 right-4 px-4 py-3 rounded-lg shadow-lg border flex items-center gap-3 animate-fade-in-down z-50 ${
+          notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          {notification.type === 'success' ? <CheckCircle className="h-5 w-5"/> : <XCircle className="h-5 w-5"/>}
+          <span className="text-sm font-medium">{notification.message}</span>
+        </div>
+      )}
 
       {/* Active Loans */}
       <section>
@@ -103,9 +124,17 @@ const MyBooks: React.FC = () => {
                   <button
                     onClick={() => handleReturn(tx.id)}
                     disabled={processingId === tx.id}
-                    className="mt-auto w-full py-2 rounded-lg bg-white border border-slate-300 text-slate-700 font-medium text-sm hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition-all shadow-sm"
+                    className={`mt-auto w-full py-2 rounded-lg border font-medium text-sm transition-all shadow-sm flex justify-center items-center gap-2
+                      ${processingId === tx.id 
+                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' 
+                        : 'bg-white border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
+                      }`}
                   >
-                    {processingId === tx.id ? 'Returning...' : 'Return Book'}
+                    {processingId === tx.id ? (
+                      <>Processing...</>
+                    ) : (
+                      <>Return Book</>
+                    )}
                   </button>
                 </div>
               );

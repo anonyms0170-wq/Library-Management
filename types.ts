@@ -1,3 +1,4 @@
+
 export enum UserRole {
   ADMIN = 'admin',
   LIBRARIAN = 'librarian',
@@ -9,6 +10,7 @@ export interface User {
   username: string;
   role: UserRole;
   fullName: string;
+  createdAt: string;
 }
 
 export interface Book {
@@ -16,11 +18,16 @@ export interface Book {
   title: string;
   author: string;
   isbn: string;
-  category: string;
+  publicationYear: number;
+  genre: string;
+  publisher: string;
+  pages: number;
   description: string;
   totalCopies: number;
   availableCopies: number;
   coverUrl?: string;
+  createdBy: number; // FK to User.id
+  createdAt: string;
 }
 
 export interface Transaction {

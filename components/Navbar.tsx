@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, LogOut, User as UserIcon, Library } from 'lucide-react';
+import { LogOut, User as UserIcon, Library, Shield, LayoutDashboard } from 'lucide-react';
+import { UserRole } from '../types';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -14,6 +16,7 @@ const Navbar: React.FC = () => {
   };
 
   const isActive = (path: string) => location.pathname === path ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50';
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.LIBRARIAN;
 
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -35,12 +38,26 @@ const Navbar: React.FC = () => {
                 >
                   Library Catalog
                 </Link>
-                <Link
-                  to="/my-books"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/my-books')}`}
-                >
-                  My Books
-                </Link>
+                
+                {/* Only Regular Users see My Books */}
+                {user.role === UserRole.USER && (
+                  <Link
+                    to="/my-books"
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/my-books')}`}
+                  >
+                    My Books
+                  </Link>
+                )}
+
+                {/* Admin and Librarians see Dashboard */}
+                {isStaff && (
+                  <Link
+                    to="/dashboard"
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/dashboard')}`}
+                  >
+                    Dashboard
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -49,7 +66,13 @@ const Navbar: React.FC = () => {
             {user ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200">
-                  <UserIcon className="h-4 w-4 text-slate-500" />
+                  {user.role === UserRole.ADMIN ? (
+                    <Shield className="h-4 w-4 text-indigo-600" />
+                  ) : user.role === UserRole.LIBRARIAN ? (
+                    <LayoutDashboard className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <UserIcon className="h-4 w-4 text-slate-500" />
+                  )}
                   <span className="text-sm font-medium text-slate-700">{user.username}</span>
                   <span className="text-xs text-slate-400 border-l border-slate-300 pl-2 uppercase">{user.role}</span>
                 </div>
